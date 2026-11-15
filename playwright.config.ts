@@ -19,7 +19,11 @@ export default defineConfig({
   projects: [
     {
       name: 'local',
-      testMatch: '**/api.spec.ts'
+      testMatch: [
+        '**/api.spec.ts',
+        '**/sanitise-evidence.spec.ts',
+        '**/evidence-collector.spec.ts'
+      ]
     },
     {
       name: 'stripe-sandbox',

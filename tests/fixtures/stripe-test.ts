@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect } from './evidence-test.js';
 import { StripeApiClient } from '../helpers/stripe-api-client.js';
 
 type TestPaymentIntent = {

@@ -31,8 +31,10 @@ test.afterAll(async () => {
   await pool.end();
 });
 
-test('detects a succeeded Stripe payment with a pending database order', async ({ stripeApi }) => {
+test('detects a succeeded Stripe payment with a pending database order', async ({ stripeApi, evidenceCollector }) => {
   const store = new PostgresOrderStore(pool);
+  const evidence = evidenceCollector.evidence;
+
   let orderId: string | undefined;
 
   try {
@@ -76,6 +78,10 @@ test('detects a succeeded Stripe payment with a pending database order', async (
 
     const stripePayment = await stripeResponse.json();
 
+    // Collect Stripe API evidence.
+    evidence.stripe.paymentStatus = stripePayment.status;
+    evidence.stripe.responseHttpStatus = stripeResponse.status();
+
     // 6. Read the actual order status from PostgreSQL.
     const databaseResponse = await pool.query(
       `SELECT status, amount, currency, stripe_payment_intent_id
@@ -87,6 +93,15 @@ test('detects a succeeded Stripe payment with a pending database order', async (
     expect(databaseResponse.rows).toHaveLength(1);
 
     const databaseOrder = databaseResponse.rows[0];
+
+    // Collect PostgreSQL evidence.
+    evidence.database.orderStatus = databaseOrder.status;
+    evidence.database.paymentIntentMatches =
+      databaseOrder.stripe_payment_intent_id === stripePayment.id;
+    evidence.database.amountMatches =
+      Number(databaseOrder.amount) === stripePayment.amount;
+    evidence.database.currencyMatches =
+      databaseOrder.currency === stripePayment.currency;
 
     // 7. Verify payment identity, amount and currency.
     expect(databaseOrder.stripe_payment_intent_id).toBe(stripePayment.id);
@@ -116,26 +131,33 @@ test('detects a succeeded Stripe payment with a pending database order', async (
       [stripePayment.id]
     );
 
-    expect(events.rows[0].total).toBe(0);
+    // Collect webhook evidence.
+    evidence.webhooks.recordedEventCount = events.rows[0].total;
 
-    console.log({
-      stripeStatus: stripePayment.status,
-      orderStatus: databaseOrder.status,
-      problems
-    });
+    expect(evidence.webhooks.recordedEventCount).toBe(0);
 
   } finally {
-    // Clean up only records belonging to this test.
+    // 11. Save sanitised diagnostic evidence.
+    const saved = await evidenceCollector.save();
+
+    if (!saved) {
+      console.warn('Incident evidence was not saved');
+    }
+
+    // 12. Clean up only records belonging to this test
     if (orderId) {
       await pool.query(
         `DELETE FROM webhook_events
-         WHERE stripe_payment_intent_id = (
-           SELECT stripe_payment_intent_id FROM orders WHERE id = $1
-         )`,
+        WHERE stripe_payment_intent_id = (
+          SELECT stripe_payment_intent_id FROM orders WHERE id = $1
+        )`,
         [orderId]
       );
 
-      await pool.query('DELETE FROM orders WHERE id = $1', [orderId]);
+      await pool.query(
+        'DELETE FROM orders WHERE id = $1',
+        [orderId]
+      );
     }
   }
 });

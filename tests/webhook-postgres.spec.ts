@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import { Pool } from 'pg';
 import Stripe from 'stripe';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/evidence-test.js';
 import { createApp } from '../src/app.js';
 import { PostgresOrderStore } from '../src/postgres-store.js';
 import type { Order, PaymentGateway } from '../src/types.js';
