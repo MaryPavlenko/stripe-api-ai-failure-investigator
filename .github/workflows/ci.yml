@@ -1,18 +1,32 @@
-name: API tests
+name: Fast CI
 
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  local-tests:
+    name: Local API and Webhook Tests
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm test
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check TypeScript
+        run: npm run typecheck
+
+      - name: Run local Playwright tests
+        run: npm test
