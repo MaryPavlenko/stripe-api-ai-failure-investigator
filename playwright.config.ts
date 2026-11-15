@@ -28,6 +28,11 @@ export default defineConfig({
       use: {
         trace: 'off'
       }
+    },
+    {
+      name: 'postgres',
+      testMatch: '**/webhook-postgres.spec.ts',
+      workers: 1
     }
   ]
 });

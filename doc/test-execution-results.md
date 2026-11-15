@@ -364,3 +364,35 @@ Assertions were updated to validate the actual Stripe API response structure.
 The suite provides automated coverage of key payment API operations, including successful and declined payments, validation, boundary values, cancellation, refunds, idempotency and status transitions.
 
 Local tests use an in-memory order store and a fake payment gateway. Stripe Sandbox tests exercise the real Stripe API using test credentials. Broader webhook reliability and database consistency testing are planned for subsequent stages.
+
+## Stage 6 — Webhook Reliability Testing
+
+- **Execution date:** 15 November 2026
+- **Framework:** Playwright + TypeScript
+- **Environment:** Local Express API, Stripe Sandbox and PostgreSQL test database (`payment_lab_test`)
+
+### Objective
+
+Verify reliable and secure Stripe webhook processing, including signature validation, duplicate delivery, out-of-order events, error handling, transaction rollback and successful processing after recovery.
+
+### Test Coverage
+
+| Test Scenario | Result |
+|---|---|
+| Successful payment webhook (`payment_intent.succeeded`) | PASS |
+| Failed payment webhook (`payment_intent.payment_failed`) | PASS |
+| Invalid webhook signature rejection | PASS |
+| Duplicate webhook delivery | PASS |
+| Out-of-order webhook events | PASS |
+| HTTP 500 error handling | PASS |
+| Retry after recovery | PASS |
+| Prevention of duplicate processing under concurrent delivery | PASS |
+
+### PostgreSQL Integration Tests
+
+Five automated integration tests were executed against an isolated PostgreSQL database:
+
+1. Stores a failed payment webhook and updates the order status.
+2. Processes repeated delivery of the same webhook only once.
+3. Preserves a paid order when an older failure event arrives later.
+4. Returns HTTP 500 for a processing failure, rolls back the transaction and
