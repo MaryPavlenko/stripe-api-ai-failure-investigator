@@ -33,6 +33,14 @@ export default defineConfig({
       name: 'postgres',
       testMatch: '**/webhook-postgres.spec.ts',
       workers: 1
+    },
+    {
+      name: 'data-consistency',
+      testMatch: '**/payment-consistency.spec.ts',
+      workers: 1,
+      use: {
+        trace: 'off'
+      }
     }
   ]
 });

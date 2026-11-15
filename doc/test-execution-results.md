@@ -396,3 +396,110 @@ Five automated integration tests were executed against an isolated PostgreSQL da
 2. Processes repeated delivery of the same webhook only once.
 3. Preserves a paid order when an older failure event arrives later.
 4. Returns HTTP 500 for a processing failure, rolls back the transaction and
+
+## Stage 7 — SQL & Data Validation
+
+**Execution date:** 15 November 2026
+
+**Framework:** Playwright, TypeScript, Stripe SDK and PostgreSQL
+
+**Environment:** Stripe Sandbox, `payment_lab` and isolated `payment_lab_test`
+
+### Objective
+
+Validate data integrity and consistency between Stripe PaymentIntents, internal orders and processed webhook events.
+
+### Test Coverage
+
+| Validation Scenario | Result |
+|---|---|
+| SQL queries for orders and processed events | PASS |
+| Automated Stripe API vs PostgreSQL comparison | PASS |
+| Payment amount and currency comparison | PASS |
+| Payment and order status comparison | PASS |
+| Duplicate record checks | PASS |
+| Detection of succeeded payment with pending order | PASS |
+| SQL integrity violation detection | PASS |
+
+### Automated Data Consistency Audit
+
+Created `scripts/check-payment-consistency.ts` to retrieve PaymentIntents from Stripe Sandbox and compare them against PostgreSQL records.
+
+The audit checks:
+
+- PaymentIntent identity.
+- Payment amount and currency.
+- Successful Stripe payments against internal order statuses.
+- Orders marked as paid when their Stripe payments are not succeeded.
+
+**Audit findings:**
+
+- Orders checked: 2
+- Consistent orders: 1
+- Orders with detected inconsistencies: 1
+
+An existing order was found with `Stripe status = succeeded` and `PostgreSQL status = pending`.
+
+The discrepancy remains unresolved. The underlying cause has not yet been established.
+
+The audit exits with a non-zero status when inconsistencies are detected.
+
+### Automated Data Consistency Test
+
+Created `tests/payment-consistency.spec.ts`.
+
+The test deliberately reproduces a payment reconciliation failure:
+
+1. Creates a pending order in the isolated PostgreSQL test database.
+2. Creates and confirms a real Stripe Sandbox PaymentIntent.
+3. Does not process a success webhook.
+4. Retrieves payment status from Stripe.
+5. Retrieves order status from PostgreSQL.
+6. Confirms that the inconsistency is detected automatically.
+
+**Result:** PASS — the expected inconsistency was successfully detected.
+
+### SQL Data Integrity Checks
+
+Created `db/data-integrity-checks.sql` with read-only checks for:
+
+- Completed orders without linked PaymentIntents.
+- Paid orders without recorded success events.
+- Success events associated with orders that are not paid.
+- Failure events associated with orders still pending.
+- Orphaned webhook events.
+- Unexpected event types in the processed-event log.
+
+The checks returned zero findings against the clean test database.
+
+A deliberately inconsistent paid order was then inserted inside a transaction. The SQL checks detected two integrity issues:
+
+- `COMPLETED_ORDER_WITHOUT_PAYMENT_INTENT`
+- `PAID_ORDER_MISSING_SUCCESS_EVENT`
+
+The transaction was rolled back after verification.
+
+### Full Regression Results
+
+| Test Suite | Passed | Failed |
+|---|---:|---:|
+| Local API | 16 | 0 |
+| Stripe Sandbox | 13 | 0 |
+| PostgreSQL Integration | 5 | 0 |
+| Data Consistency | 1 | 0 |
+| **Total** | **35** | **0** |
+
+**TypeScript validation:** PASS
+
+### Limitations
+
+- The SQL checks validate consistency within PostgreSQL. They cannot independently determine the current payment status in Stripe.
+- The Stripe reconciliation script currently checks key amount, currency and status relationships rather than every possible Stripe payment state.
+- The successful-payment/pending-order scenario is intentionally reproduced by omitting webhook processing.
+- The existing inconsistency found in the main database requires separate investigation.
+
+### Final Result
+
+**PASS — All seven Stage 7 checklist items completed.**
+
+Automated checks now cover Stripe API and PostgreSQL consistency, duplicate detection, payment-state discrepancies and internal SQL integrity violations.
