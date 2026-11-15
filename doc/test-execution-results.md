@@ -302,3 +302,65 @@ The application successfully:
 - The successful payment flow was verified using HTTP responses, Stripe CLI logs and SQL queries.
 - Duplicate webhook deliveries, concurrent processing, retry behaviour, event ordering and further payment failure scenarios have not yet been comprehensively tested.
 - These reliability scenarios will be addressed in subsequent project stages.
+
+## Stage 5 — Payment API Test Automation
+
+**Execution date:** 15 November 2026
+**Framework:** Playwright + TypeScript
+**Environment:** Local Express API and Stripe Sandbox
+
+### Objective
+
+Automate payment lifecycle scenarios and validate API responses, payment state transitions, refunds, idempotency and boundary-value behaviour.
+
+### Test Execution Results
+
+| Test Scenario | Result |
+|---|---|
+| Successful payment confirmation | PASS |
+| Declined payment | PASS |
+| Invalid amounts and currencies | PASS |
+| Minimum amount and boundary values | PASS |
+| PaymentIntent cancellation | PASS |
+| Full refund | PASS |
+| Partial refund | PASS |
+| Idempotency key reuse and parameter conflicts | PASS |
+| PaymentIntent status transitions | PASS |
+
+### Regression Execution
+
+| Test Suite | Tests | Passed | Failed |
+|---|---:|---:|---:|
+| Local API tests | 16 | 16 | 0 |
+| Stripe Sandbox integration tests | 13 | 13 | 0 |
+| **Total** | **29** | **29** | **0** |
+
+**TypeScript validation:** PASS (`tsc --noEmit`)
+
+### Key Findings
+
+- Stripe Sandbox rejected GBP amounts below £0.30.
+- The local Express API accepted order amounts between £1 and £1,000 inclusive.
+- Declined card payments returned structured errors without completing the payment.
+- Full and partial refunds were successfully created and independently verified.
+- Repeated PaymentIntent creation requests using the same idempotency key returned the same PaymentIntent.
+- Reusing an idempotency key with different parameters was rejected.
+- A declined PaymentIntent could subsequently succeed with a valid test payment method.
+- An already succeeded PaymentIntent could not be cancelled.
+
+### Test Automation Improvements
+
+During test development, two incorrect assumptions about Stripe response fields were identified and corrected:
+
+- The `amount_too_small` validation error did not include `error.param`.
+- The Refund response did not include the expected `livemode` field.
+
+Assertions were updated to validate the actual Stripe API response structure.
+
+### Final Result
+
+**PASS — All 29 automated tests passed.**
+
+The suite provides automated coverage of key payment API operations, including successful and declined payments, validation, boundary values, cancellation, refunds, idempotency and status transitions.
+
+Local tests use an in-memory order store and a fake payment gateway. Stripe Sandbox tests exercise the real Stripe API using test credentials. Broader webhook reliability and database consistency testing are planned for subsequent stages.

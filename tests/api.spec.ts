@@ -154,3 +154,41 @@ test('ignores unrelated Stripe events with valid signatures', async () => {
   expect(response.status()).toBe(200);
   expect((await response.json()).status).toBe('ignored');
 });
+
+
+const amountBoundaries = [
+  { amount: 99, expectedStatus: 400 },
+  { amount: 100, expectedStatus: 201 },
+  { amount: 101, expectedStatus: 201 },
+  { amount: 99999, expectedStatus: 201 },
+  { amount: 100000, expectedStatus: 201 },
+  { amount: 100001, expectedStatus: 400 }
+];
+
+for (const testCase of amountBoundaries) {
+  test(`order amount boundary: ${testCase.amount}p`, async () => {
+    const response = await api.post('/orders', {
+      data: {
+        amount: testCase.amount,
+        currency: 'gbp'
+      }
+    });
+
+    expect(response.status()).toBe(testCase.expectedStatus);
+
+    const result = await response.json();
+
+    if (testCase.expectedStatus === 201) {
+      expect(result.amount).toBe(testCase.amount);
+      expect(result.status).toBe('pending');
+
+      // Verify that the created order can be retrieved.
+      const getResponse = await api.get(`/orders/${result.orderId}`);
+
+      expect(getResponse.status()).toBe(200);
+      expect((await getResponse.json()).amount).toBe(testCase.amount);
+    } else {
+      expect(result.error).toContain('Provide integer amount');
+    }
+  });
+}
