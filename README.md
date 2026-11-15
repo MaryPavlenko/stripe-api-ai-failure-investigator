@@ -98,8 +98,6 @@ Follow [`docs/ru/03-local-app-webhooks.md`](docs/ru/03-local-app-webhooks.md). I
 7. **Investigate:** Inject known faults, capture sanitised evidence, then measure AI diagnosis against labelled ground truth and a simple rule-based baseline.
 8. **Publish:** Share reproducible evidence on GitHub and **one short** LinkedIn post after validation.
 
-See [the Russian step-by-step pipeline lesson](docs/ru/04-automated-testing-pipeline.md).
-
 ### Official references
 
 - [Stripe API Reference](https://docs.stripe.com/api)
