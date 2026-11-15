@@ -1,0 +1,23 @@
+{
+  "scenario_id": "F003",
+  "investigator": "llm",
+  "model": "gpt-6-luna",
+  "report": {
+    "decision": "insufficient_evidence",
+    "summary": "The supplied evidence shows a payment_intent.succeeded webhook reporting GBP 50.00 while the order records GBP 10.00 and remains pending. The webhook returned HTTP 500. These observations indicate a payment amount inconsistency and an unsuccessful webhook response, but do not establish why either occurred or whether the HTTP 500 was caused by the amount mismatch.",
+    "failureCategory": "payment_data_inconsistency",
+    "probableRootCause": null,
+    "confidence": "high",
+    "supportingEvidence": [
+      "The order amount is 1000 pence (GBP 10.00), while the webhook amount is 5000 pence (GBP 50.00).",
+      "The webhook event is payment_intent.succeeded, but the order status is pending.",
+      "The webhook HTTP status is 500; no error details or processing logs are supplied."
+    ],
+    "recommendations": [
+      "Compare the Stripe PaymentIntent ID, amount, currency, and associated order ID against the stored order and payment records.",
+      "Inspect webhook processing logs and the HTTP 500 response details to determine where processing failed.",
+      "Review order creation and amount calculation, and check whether the webhook was matched to the correct order.",
+      "Establish whether the order status was updated after this event and whether any retries or later events occurred."
+    ]
+  }
+}
