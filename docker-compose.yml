@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: payment_lab
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - lab_pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab -d payment_lab"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+volumes:
+  lab_pgdata:

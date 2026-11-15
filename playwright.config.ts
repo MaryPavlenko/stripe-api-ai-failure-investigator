@@ -1,0 +1,33 @@
+
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  timeout: 15_000,
+  retries: 0,
+  fullyParallel: false,
+
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }]
+  ],
+
+  use: {
+    trace: 'retain-on-failure'
+  },
+
+  projects: [
+    {
+      name: 'local',
+      testMatch: '**/api.spec.ts'
+    },
+    {
+      name: 'stripe-sandbox',
+      testMatch: '**/stripe-sandbox.spec.ts',
+      workers: 1,
+      use: {
+        trace: 'off'
+      }
+    }
+  ]
+});
