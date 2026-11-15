@@ -23,7 +23,9 @@ export default defineConfig({
         '**/api.spec.ts',
         '**/sanitise-evidence.spec.ts',
         '**/evidence-collector.spec.ts',
-        '**/fault-injection.spec.ts'
+        '**/fault-injection.spec.ts',
+        '**/rule-based-baseline.spec.ts',
+        '**/llm-evidence-schema.spec.ts'
       ]
     },
     {
