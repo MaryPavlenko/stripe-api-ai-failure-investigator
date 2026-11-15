@@ -1,0 +1,22 @@
+
+{
+  "scenario_id": "F004",
+  "root_cause": "paid_order_overwritten_by_late_failure_event",
+  "failure_category": "incorrect_payment_state_transition",
+  "description": "A delayed payment_intent.payment_failed webhook incorrectly overwrites an already paid order, changing its status to payment_failed.",
+  "injection": {
+    "component": "FaultyLateFailureStore",
+    "method": "applyPaymentEvent",
+    "mechanism": "Remove the protection that prevents payment_failed events from overwriting paid orders"
+  },
+  "expected_behaviour": {
+    "order_status_after_success": "paid",
+    "order_status_after_delayed_failure": "paid"
+  },
+  "observed_faulty_behaviour": {
+    "order_status_after_success": "paid",
+    "order_status_after_delayed_failure": "payment_failed"
+  },
+  "source_test": "tests/fault-injection.spec.ts",
+  "verified_by": "automated_fault_injection_test"
+}

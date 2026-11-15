@@ -1,0 +1,21 @@
+
+{
+  "scenario_id": "F003",
+  "root_cause": "webhook_payment_amount_mismatch",
+  "failure_category": "payment_data_inconsistency",
+  "description": "The incoming webhook reports a payment amount that differs from the amount stored in the associated order.",
+  "injection": {
+    "component": "MemoryOrderStore",
+    "method": "applyPaymentEvent",
+    "mechanism": "Send a signed payment_intent.succeeded webhook with an incorrect amount",
+    "order_amount_pence": 1000,
+    "webhook_amount_pence": 5000,
+    "currency": "gbp"
+  },
+  "expected_behaviour": {
+    "webhook_http_status": 500,
+    "order_status_after_rejection": "pending"
+  },
+  "source_test": "tests/api.spec.ts",
+  "verified_by": "automated_test"
+}

@@ -1,0 +1,14 @@
+{
+  "scenario_id": "F002",
+  "event_type": "payment_intent.succeeded",
+  "first_delivery": {
+    "http_status": 200,
+    "processing_result": "processed"
+  },
+  "second_delivery": {
+    "same_event_id": true,
+    "http_status": 200,
+    "processing_result": "processed"
+  },
+  "observed_processing_count": 2
+}

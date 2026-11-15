@@ -1,0 +1,21 @@
+{
+  "scenario_id": "F005",
+  "stripe": {
+    "payment_status": "succeeded",
+    "response_http_status": 200
+  },
+  "database": {
+    "order_status": "pending",
+    "payment_intent_matches": true,
+    "amount_matches": true,
+    "currency_matches": true
+  },
+  "webhooks": {
+    "recorded_event_count": 0,
+    "delivery_http_status": null
+  },
+  "application": {
+    "logs": null,
+    "errors": null
+  }
+}

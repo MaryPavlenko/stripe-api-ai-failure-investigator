@@ -1,0 +1,15 @@
+{
+  "scenario_id": "F004",
+  "first_event": {
+    "type": "payment_intent.succeeded",
+    "http_status": 200,
+    "order_status": "paid"
+  },
+  "second_event": {
+    "type": "payment_intent.payment_failed",
+    "different_event_id": true,
+    "http_status": 200,
+    "order_status": "payment_failed"
+  },
+  "application_error": null
+}

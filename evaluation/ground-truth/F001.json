@@ -1,0 +1,20 @@
+
+{
+  "scenario_id": "F001",
+  "root_cause": "simulated_storage_timeout",
+  "failure_category": "transient_storage_failure",
+  "description": "The MemoryOrderStore deliberately throws a simulated database timeout during the first webhook processing attempt.",
+  "injection": {
+    "component": "MemoryOrderStore",
+    "property": "failNextEvent",
+    "value": true
+  },
+  "expected_behaviour": {
+    "first_webhook_http_status": 500,
+    "order_status_after_failure": "pending",
+    "retry_webhook_http_status": 200,
+    "order_status_after_retry": "paid"
+  },
+  "source_test": "tests/api.spec.ts",
+  "verified_by": "existing_automated_test"
+}

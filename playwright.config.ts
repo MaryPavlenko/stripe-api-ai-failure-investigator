@@ -22,7 +22,8 @@ export default defineConfig({
       testMatch: [
         '**/api.spec.ts',
         '**/sanitise-evidence.spec.ts',
-        '**/evidence-collector.spec.ts'
+        '**/evidence-collector.spec.ts',
+        '**/fault-injection.spec.ts'
       ]
     },
     {

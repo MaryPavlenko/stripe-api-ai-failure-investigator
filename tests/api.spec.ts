@@ -1,3 +1,5 @@
+
+import { writeFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
@@ -114,24 +116,143 @@ test('processes a duplicate webhook only once', async () => {
   expect((await (await api.get(`/orders/${order.orderId}`)).json()).status).toBe('paid');
 });
 
-test('returns 500 for a database timeout, then safely processes the retry', async () => {
+
+test('returns 500 for a database timeout, then safely processes the retry', async ({}, testInfo) => {
   const order = await newOrder();
+
+  // Inject a transient failure.
   store.failNextEvent = true;
+
   const id = 'evt_retry_after_error';
-  const first = await sendWebhook(order.paymentIntentId, 'payment_intent.succeeded', { id });
+
+  // First webhook delivery.
+  const first = await sendWebhook(
+    order.paymentIntentId,
+    'payment_intent.succeeded',
+    { id }
+  );
+
+  const firstOrder = await (
+    await api.get(`/orders/${order.orderId}`)
+  ).json();
+
   expect(first.status()).toBe(500);
-  expect((await (await api.get(`/orders/${order.orderId}`)).json()).status).toBe('pending');
-  const second = await sendWebhook(order.paymentIntentId, 'payment_intent.succeeded', { id });
+  expect(firstOrder.status).toBe('pending');
+
+  // Retry the same webhook event.
+  const second = await sendWebhook(
+    order.paymentIntentId,
+    'payment_intent.succeeded',
+    { id }
+  );
+
+  const secondResult = await second.json();
+
+  const finalOrder = await (
+    await api.get(`/orders/${order.orderId}`)
+  ).json();
+
   expect(second.status()).toBe(200);
-  expect((await second.json()).status).toBe('processed');
-  expect((await (await api.get(`/orders/${order.orderId}`)).json()).status).toBe('paid');
+  expect(secondResult.status).toBe('processed');
+  expect(finalOrder.status).toBe('paid');
+
+  // Collect observed facts only. No ground truth.
+  const scenarioEvidence = {
+    scenario_id: 'F001',
+    event_type: 'payment_intent.succeeded',
+
+    first_delivery: {
+      http_status: first.status(),
+      order_status: firstOrder.status
+    },
+
+    retry: {
+      same_event_id: true,
+      http_status: second.status(),
+      processing_result: secondResult.status,
+      order_status: finalOrder.status
+    },
+
+    application_error: null
+  };
+
+  // Save only allowlisted diagnostic fields.
+  const evidencePath = testInfo.outputPath('F001-evidence.json');
+
+  await writeFile(
+    evidencePath,
+    JSON.stringify(scenarioEvidence, null, 2),
+    'utf8'
+  );
+
+  await testInfo.attach('F001-evidence.json', {
+    path: evidencePath,
+    contentType: 'application/json'
+  });
 });
 
-test('does not accept a webhook with the wrong payment amount', async () => {
-  const order = await newOrder();
-  const response = await sendWebhook(order.paymentIntentId, 'payment_intent.succeeded', { amount: 5000 });
+
+test('does not accept a webhook with the wrong payment amount', async ({}, testInfo) => {
+  // 1. Define test amounts in pence.
+  const orderAmount = 1000;
+  const webhookAmount = 5000;
+
+  // 2. Create an order for £10.
+  const order = await newOrder(orderAmount);
+
+  // 3. Send a webhook reporting £50 for the same payment.
+  const response = await sendWebhook(
+    order.paymentIntentId,
+    'payment_intent.succeeded',
+    { amount: webhookAmount }
+  );
+
+  // 4. Verify the webhook was rejected.
   expect(response.status()).toBe(500);
-  expect((await (await api.get(`/orders/${order.orderId}`)).json()).status).toBe('pending');
+
+  // 5. Retrieve the actual order from the application.
+  const orderResponse = await api.get(`/orders/${order.orderId}`);
+
+  expect(orderResponse.status()).toBe(200);
+
+  const storedOrder = await orderResponse.json();
+
+  expect(storedOrder.status).toBe('pending');
+  expect(Number(storedOrder.amount)).toBe(orderAmount);
+
+  // 6. Collect observed facts without ground truth.
+  const scenarioEvidence = {
+    scenario_id: 'F003',
+    event_type: 'payment_intent.succeeded',
+
+    order: {
+      amount_pence: Number(storedOrder.amount),
+      currency: storedOrder.currency,
+      status: storedOrder.status
+    },
+
+    webhook: {
+      amount_pence: webhookAmount,
+      currency: 'gbp',
+      http_status: response.status()
+    },
+
+    application_error: null
+  };
+
+  // 7. Save allowlisted diagnostic evidence.
+  const evidencePath = testInfo.outputPath('F003-evidence.json');
+
+  await writeFile(
+    evidencePath,
+    JSON.stringify(scenarioEvidence, null, 2),
+    'utf8'
+  );
+
+  await testInfo.attach('F003-evidence.json', {
+    path: evidencePath,
+    contentType: 'application/json'
+  });
 });
 
 test('a delayed failure event cannot undo a successful payment', async () => {

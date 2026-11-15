@@ -1,0 +1,36 @@
+
+{
+  "scenario_id": "F005",
+  "root_cause": "webhook_processing_not_invoked_in_test",
+  "failure_category": "payment_state_inconsistency",
+  "description": "Stripe Sandbox confirms a successful payment, while the associated PostgreSQL order remains pending. The test deliberately does not invoke webhook processing, so the database order is not updated.",
+  "test_setup": {
+    "stripe_payment_confirmed": true,
+    "payment_intent_linked_to_order": true,
+    "webhook_processing_invoked": false,
+    "database_order_updated_by_webhook": false
+  },
+  "observed_behaviour": {
+    "stripe_payment_status": "succeeded",
+    "database_order_status": "pending",
+    "payment_intent_matches": true,
+    "amount_matches": true,
+    "currency_matches": true,
+    "recorded_webhook_events": 0,
+    "webhook_delivery_http_status": null,
+    "application_logs_available": false
+  },
+  "evaluation_expectation": {
+    "diagnosis": "insufficient_evidence",
+    "identify_status_inconsistency": true,
+    "identify_exact_root_cause": false,
+    "explanation": "The evidence establishes a payment state inconsistency but does not establish whether webhook delivery, event processing, or database updating failed.",
+    "recommended_checks": [
+      "Inspect Stripe webhook delivery history",
+      "Check application webhook processing logs",
+      "Verify event persistence and database update operations"
+    ]
+  },
+  "source_test": "tests/payment-consistency.spec.ts",
+  "verified_by": "automated_stripe_sandbox_postgresql_test"
+}

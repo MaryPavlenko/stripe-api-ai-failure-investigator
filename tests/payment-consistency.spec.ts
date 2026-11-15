@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { Pool } from 'pg';
 import { test, expect } from './fixtures/stripe-test.js';
 import { PostgresOrderStore } from '../src/postgres-store.js';
+import { writeFile } from 'node:fs/promises';
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -31,7 +32,7 @@ test.afterAll(async () => {
   await pool.end();
 });
 
-test('detects a succeeded Stripe payment with a pending database order', async ({ stripeApi, evidenceCollector }) => {
+test('detects a succeeded Stripe payment with a pending database order', async ({ stripeApi, evidenceCollector }, testInfo) => {
   const store = new PostgresOrderStore(pool);
   const evidence = evidenceCollector.evidence;
 
@@ -135,6 +136,47 @@ test('detects a succeeded Stripe payment with a pending database order', async (
     evidence.webhooks.recordedEventCount = events.rows[0].total;
 
     expect(evidence.webhooks.recordedEventCount).toBe(0);
+
+    // F005: Export observed evidence for AI evaluation.
+    // Do not include ground truth or test setup details.
+    const scenarioEvidence = {
+      scenario_id: 'F005',
+
+      stripe: {
+        payment_status: evidence.stripe.paymentStatus,
+        response_http_status: evidence.stripe.responseHttpStatus
+      },
+
+      database: {
+        order_status: evidence.database.orderStatus,
+        payment_intent_matches: evidence.database.paymentIntentMatches,
+        amount_matches: evidence.database.amountMatches,
+        currency_matches: evidence.database.currencyMatches
+      },
+
+      webhooks: {
+        recorded_event_count: evidence.webhooks.recordedEventCount,
+        delivery_http_status: evidence.webhooks.deliveryHttpStatus
+      },
+
+      application: {
+        logs: null,
+        errors: null
+      }
+    };
+
+    const evidencePath = testInfo.outputPath('F005-evidence.json');
+
+    await writeFile(
+      evidencePath,
+      JSON.stringify(scenarioEvidence, null, 2),
+      'utf8'
+    );
+
+    await testInfo.attach('F005-evidence.json', {
+      path: evidencePath,
+      contentType: 'application/json'
+    });
 
   } finally {
     // 11. Save sanitised diagnostic evidence.

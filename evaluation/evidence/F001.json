@@ -1,0 +1,15 @@
+{
+  "scenario_id": "F001",
+  "event_type": "payment_intent.succeeded",
+  "first_delivery": {
+    "http_status": 500,
+    "order_status": "pending"
+  },
+  "retry": {
+    "same_event_id": true,
+    "http_status": 200,
+    "processing_result": "processed",
+    "order_status": "paid"
+  },
+  "application_error": null
+}

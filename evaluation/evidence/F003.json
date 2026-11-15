@@ -1,0 +1,15 @@
+{
+  "scenario_id": "F003",
+  "event_type": "payment_intent.succeeded",
+  "order": {
+    "amount_pence": 1000,
+    "currency": "gbp",
+    "status": "pending"
+  },
+  "webhook": {
+    "amount_pence": 5000,
+    "currency": "gbp",
+    "http_status": 500
+  },
+  "application_error": null
+}

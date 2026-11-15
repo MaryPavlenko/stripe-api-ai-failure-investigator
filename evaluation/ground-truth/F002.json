@@ -1,0 +1,24 @@
+
+{
+  "scenario_id": "F002",
+  "root_cause": "webhook_event_id_rewritten_per_delivery",
+  "failure_category": "idempotency_failure",
+  "description": "FaultyDedupStore replaces the original webhook event ID with a unique ID for each delivery. This prevents MemoryOrderStore from recognising duplicate events.",
+  "injection": {
+    "component": "FaultyDedupStore",
+    "method": "applyPaymentEvent",
+    "mechanism": "Append a unique delivery counter to the original event ID"
+  },
+  "expected_behaviour": {
+    "first_processing_result": "processed",
+    "second_processing_result": "duplicate",
+    "processing_count": 1
+  },
+  "observed_faulty_behaviour": {
+    "first_processing_result": "processed",
+    "second_processing_result": "processed",
+    "processing_count": 2
+  },
+  "source_test": "tests/fault-injection.spec.ts",
+  "verified_by": "automated_fault_injection_test"
+}
